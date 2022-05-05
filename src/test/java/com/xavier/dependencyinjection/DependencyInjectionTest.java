@@ -11,7 +11,6 @@ public class DependencyInjectionTest {
 
     // 对于组件构造部分，我分解的任务如下：
 
-    // 无需构造的组件——组件实例
     @Nested
     class InstanceComponentBind {
 
@@ -20,6 +19,7 @@ public class DependencyInjectionTest {
             context = new Context();
         }
 
+        // 无需构造的组件——组件实例
         @Test
         void should_bind_if_giving_a_instance() {
             Component component = new Component() {
@@ -29,11 +29,15 @@ public class DependencyInjectionTest {
             assertSame(component, context.get(Component.class));
         }
 
-    }
+        // 如果注册的组件不可实例化，则抛出异常
+        @Test
+        void should_throw_exception_if_no_default_constructor_nor_injection_constructor() {
+            assertThrows(UnsupportedOperationException.class, () -> context.bind(Component.class, CannotInstanceComponent.class));
+        }
+        // 抽象类
+        // 接口
 
-    // 如果注册的组件不可实例化，则抛出异常
-    // 抽象类
-    // 接口
+    }
 
     // 构造函数注入
     @Nested

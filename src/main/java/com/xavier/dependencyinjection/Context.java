@@ -38,7 +38,7 @@ public class Context {
             components.put(typeClass, instance);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
                  NoSuchMethodException e) {
-            throw new RuntimeException(e);
+            throw new UnsupportedOperationException(e);
         }
     }
 }
