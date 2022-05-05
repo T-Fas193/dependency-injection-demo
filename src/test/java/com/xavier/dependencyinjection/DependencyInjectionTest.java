@@ -42,7 +42,10 @@ public class DependencyInjectionTest {
         }
 
         // 接口
-
+        @Test
+        void should_throw_exception_if_implementation_is_interface() {
+            assertThrows(UnsupportedOperationException.class, () -> context.bind(Component.class, Component.class));
+        }
     }
 
     // 构造函数注入
