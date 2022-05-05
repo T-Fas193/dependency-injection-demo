@@ -3,13 +3,11 @@ package com.xavier.dependencyinjection;
 import jakarta.inject.Inject;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.util.Arrays.stream;
-import static java.util.Optional.*;
+import static java.util.Optional.ofNullable;
 
 public class Context {
 
@@ -19,32 +17,35 @@ public class Context {
         return (T) components.get(componentClass);
     }
 
-    public <T> void bind(Class<T> componentClass, T component) {
-        components.put(componentClass, component);
+    public <T, I extends T> void bind(Class<T> typeClass, I implementationInstance) {
+        components.put(typeClass, implementationInstance);
     }
 
-    public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementClass) {
+    public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
         try {
-            long injectionConstructorCount = stream(implementClass.getConstructors()).filter(constructor -> constructor.isAnnotationPresent(Inject.class)).count();
-            if (injectionConstructorCount > 1) throw new MultipleInjectionFoundException();
+            Constructor<?>[] injectionConstructors = stream(implementationClass.getConstructors()).filter(constructor -> constructor.isAnnotationPresent(Inject.class)).toArray(Constructor<?>[]::new);
+            if (injectionConstructors.length > 1) throw new MultipleInjectionFoundException();
 
-            Optional<Constructor<?>> optionalConstructor = stream(implementClass.getConstructors())
-                    .filter(constructor -> constructor.isAnnotationPresent(Inject.class)).findFirst();
-            if (optionalConstructor.isPresent()) {
-                Constructor<?> constructor = optionalConstructor.get();
-                Object[] constructorParameters = stream(constructor.getParameterTypes())
-                        .map(parameterType -> ofNullable(components.get(parameterType))
-                                .orElseThrow(DependencyNotExists::new))
-                        .toArray();
-                Object instance = constructor.newInstance(constructorParameters);
-                components.put(typeClass, instance);
+            if (injectionConstructors.length > 0) {
+                bindInjectionConstructorInstance(typeClass, injectionConstructors[0]);
                 return;
             }
-            I instance = implementClass.getConstructor().newInstance();
-            components.put(typeClass, instance);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
-                 NoSuchMethodException e) {
+            bindDefaultConstructorInstance(typeClass, implementationClass);
+        } catch (ReflectiveOperationException e) {
             throw new UnsupportedOperationException(e);
         }
+    }
+
+    private <T> void bindInjectionConstructorInstance(Class<T> typeClass, Constructor<?> constructor) throws ReflectiveOperationException {
+        Object[] constructorParameters = stream(constructor.getParameterTypes())
+                .map(parameterType -> ofNullable(components.get(parameterType)).orElseThrow(DependencyNotExists::new))
+                .toArray();
+        Object instance = constructor.newInstance(constructorParameters);
+        components.put(typeClass, instance);
+    }
+
+    private <T, I extends T> void bindDefaultConstructorInstance(Class<T> typeClass, Class<I> implementClass) throws ReflectiveOperationException {
+        I instance = implementClass.getConstructor().newInstance();
+        components.put(typeClass, instance);
     }
 }
