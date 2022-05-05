@@ -1,11 +1,13 @@
 package com.xavier.dependencyinjection;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DependencyInjectionTest {
+    private Context context;
 
     // 对于组件构造部分，我分解的任务如下：
 
@@ -13,11 +15,15 @@ public class DependencyInjectionTest {
     @Nested
     class InstanceComponentBind {
 
+        @BeforeEach
+        void setup() {
+            context = new Context();
+        }
+
         @Test
         void should_bind_if_giving_a_instance() {
             Component component = new Component() {
             };
-            Context context = new Context();
             context.bind(Component.class, component);
 
             assertSame(component, context.get(Component.class));
@@ -33,10 +39,14 @@ public class DependencyInjectionTest {
     @Nested
     class ConstructorComponentBind {
 
+        @BeforeEach
+        void setup() {
+            context = new Context();
+        }
+
         // 无依赖的组件应该通过默认构造函数生成组件实例
         @Test
         void should_bind_if_class_has_default_constructor() {
-            Context context = new Context();
             context.bind(Component.class, DefaultConstructorComponent.class);
 
             Component component = context.get(Component.class);
@@ -47,7 +57,6 @@ public class DependencyInjectionTest {
         // 有依赖的组件，通过 Inject 标注的构造函数生成组件实例
         @Test
         void should_bind_and_inject_if_class_has_injection_constructor() {
-            Context context = new Context();
             Dependency dependency = new Dependency() {
             };
 
@@ -62,8 +71,6 @@ public class DependencyInjectionTest {
         // 如果所依赖的组件也存在依赖，那么需要对所依赖的组件也完成依赖注入
         @Test
         void should_bind_and_inject_if_class_has_transitive_constructor() {
-            Context context = new Context();
-
             String stringComponent = "this is a string component";
             context.bind(String.class, stringComponent);
             context.bind(Dependency.class, StringConstructorDependency.class);
