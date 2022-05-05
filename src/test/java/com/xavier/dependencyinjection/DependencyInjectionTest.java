@@ -102,7 +102,13 @@ public class DependencyInjectionTest {
             assertThrows(UnsupportedOperationException.class, () -> context.bind(Component.class, MultipleInjectionConstructorComponent.class));
         }
 
-        // 如果组件需要的依赖不存在，则抛出异常如果组件间存在循环依赖，则抛出异常
+        // 如果组件需要的依赖不存在，则抛出异常
+        @Test
+        void should_throw_exception_if_dependency_not_exist() {
+            assertThrows(DependencyNotExists.class, () -> context.bind(Component.class, InjectionConstructorComponent.class));
+        }
+
+        // 如果组件间存在循环依赖，则抛出异常
     }
 
     // 字段注入

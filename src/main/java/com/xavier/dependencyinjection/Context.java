@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static java.util.Arrays.stream;
+import static java.util.Optional.*;
 
 public class Context {
 
@@ -32,7 +33,9 @@ public class Context {
             if (optionalConstructor.isPresent()) {
                 Constructor<?> constructor = optionalConstructor.get();
                 Object[] constructorParameters = stream(constructor.getParameterTypes())
-                        .map(parameterType -> components.get(parameterType)).toArray();
+                        .map(parameterType -> ofNullable(components.get(parameterType))
+                                .orElseThrow(DependencyNotExists::new))
+                        .toArray();
                 Object instance = constructor.newInstance(constructorParameters);
                 components.put(typeClass, instance);
                 return;
