@@ -24,6 +24,9 @@ public class Context {
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementClass) {
         try {
+            long injectionConstructorCount = stream(implementClass.getConstructors()).filter(constructor -> constructor.isAnnotationPresent(Inject.class)).count();
+            if (injectionConstructorCount > 1) throw new UnsupportedOperationException();
+
             Optional<Constructor<?>> optionalConstructor = stream(implementClass.getConstructors())
                     .filter(constructor -> constructor.isAnnotationPresent(Inject.class)).findFirst();
             if (optionalConstructor.isPresent()) {
