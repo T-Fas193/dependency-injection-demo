@@ -4,10 +4,11 @@ import jakarta.inject.Inject;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import static java.util.Arrays.stream;
 
 public class Context {
 
@@ -23,9 +24,13 @@ public class Context {
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementClass) {
         try {
-            Optional<Constructor<?>> optionalConstructor = Arrays.stream(implementClass.getConstructors()).filter(constructor -> constructor.isAnnotationPresent(Inject.class)).findFirst();
+            Optional<Constructor<?>> optionalConstructor = stream(implementClass.getConstructors())
+                    .filter(constructor -> constructor.isAnnotationPresent(Inject.class)).findFirst();
             if (optionalConstructor.isPresent()) {
-                Object instance = optionalConstructor.get().newInstance(components.values().toArray());
+                Constructor<?> constructor = optionalConstructor.get();
+                Object[] constructorParameters = stream(constructor.getParameterTypes())
+                        .map(parameterType -> components.get(parameterType)).toArray();
+                Object instance = constructor.newInstance(constructorParameters);
                 components.put(typeClass, instance);
                 return;
             }
