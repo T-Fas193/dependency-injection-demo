@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static java.util.Arrays.stream;
-import static java.util.Optional.ofNullable;
 
 public class Context {
 
@@ -41,7 +40,7 @@ public class Context {
 
     private <T> void bindInjectionConstructorInstance(Class<T> typeClass, Constructor<?> constructor) throws ReflectiveOperationException {
         Object[] constructorParameters = stream(constructor.getParameterTypes())
-                .map(parameterType -> ofNullable(providers.get(parameterType)).orElseThrow(DependencyNotExists::new).get())
+                .map(parameterType -> get(parameterType).orElseThrow(DependencyNotExists::new))
                 .toArray();
         Object instance = constructor.newInstance(constructorParameters);
         providers.put(typeClass, () -> instance);
