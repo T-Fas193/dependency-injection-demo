@@ -1,8 +1,11 @@
 package com.xavier.dependencyinjection;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,7 +29,9 @@ public class DependencyInjectionTest {
             };
             context.bind(Component.class, component);
 
-            assertSame(component, context.get(Component.class));
+            Optional<Component> bindComponent = context.get(Component.class);
+            assertTrue(bindComponent.isPresent());
+            assertSame(component, bindComponent.get());
         }
 
         // 如果注册的组件不可实例化，则抛出异常
@@ -62,9 +67,9 @@ public class DependencyInjectionTest {
         void should_bind_if_class_has_default_constructor() {
             context.bind(Component.class, DefaultConstructorComponent.class);
 
-            Component component = context.get(Component.class);
-            assertNotNull(component);
-            assertTrue(component instanceof DefaultConstructorComponent);
+            Optional<Component> bindComponent = context.get(Component.class);
+            assertTrue(bindComponent.isPresent());
+            Assertions.assertTrue(bindComponent.get() instanceof DefaultConstructorComponent);
         }
 
         // 有依赖的组件，通过 Inject 标注的构造函数生成组件实例
@@ -76,9 +81,9 @@ public class DependencyInjectionTest {
             context.bind(Dependency.class, dependency);
             context.bind(Component.class, InjectionConstructorComponent.class);
 
-            InjectionConstructorComponent component = (InjectionConstructorComponent) context.get(Component.class);
-            assertNotNull(component);
-            assertSame(dependency, component.dependency());
+            Optional<Component> component = context.get(Component.class);
+            assertTrue(component.isPresent());
+            assertSame(dependency, ((InjectionConstructorComponent) component.get()).dependency());
         }
 
         // 如果所依赖的组件也存在依赖，那么需要对所依赖的组件也完成依赖注入
@@ -89,9 +94,9 @@ public class DependencyInjectionTest {
             context.bind(Dependency.class, StringConstructorDependency.class);
             context.bind(Component.class, InjectionConstructorComponent.class);
 
-            InjectionConstructorComponent component = (InjectionConstructorComponent) context.get(Component.class);
-            assertNotNull(component);
-            StringConstructorDependency dependency = (StringConstructorDependency) component.dependency();
+            Optional<Component> component = context.get(Component.class);
+            assertTrue(component.isPresent());
+            StringConstructorDependency dependency = (StringConstructorDependency) ((InjectionConstructorComponent) component.get()).dependency();
             assertNotNull(dependency);
             assertSame(stringComponent, dependency.stringComponent());
         }

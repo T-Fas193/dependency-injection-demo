@@ -6,6 +6,7 @@ import jakarta.inject.Provider;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Arrays.stream;
 import static java.util.Optional.ofNullable;
@@ -14,9 +15,10 @@ public class Context {
 
     private final Map<Class<?>, Provider<?>> providers = new HashMap<>();
 
-    public <T> T get(Class<T> componentClass) {
-        return (T) providers.get(componentClass).get();
+    public <T> Optional<T> get(Class<T> componentClass) {
+        return Optional.ofNullable(providers.get(componentClass)).map(provider -> (T) provider.get());
     }
+
 
     public <T, I extends T> void bind(Class<T> typeClass, I implementationInstance) {
         providers.put(typeClass, () -> implementationInstance);
