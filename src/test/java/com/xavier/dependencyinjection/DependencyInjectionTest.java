@@ -43,7 +43,8 @@ public class DependencyInjectionTest {
         // 抽象类
         @Test
         void should_throw_exception_if_implementation_is_abstract_class() {
-            assertThrows(UnsupportedOperationException.class, () -> context.bind(Component.class, AbstractComponent.class));
+            context.bind(Component.class, AbstractComponent.class);
+            assertThrows(UnsupportedOperationException.class, () -> context.get(Component.class));
         }
 
         // 接口
@@ -110,7 +111,8 @@ public class DependencyInjectionTest {
         // 如果组件需要的依赖不存在，则抛出异常
         @Test
         void should_throw_exception_if_dependency_not_exist() {
-            assertThrows(DependencyNotExists.class, () -> context.bind(Component.class, InjectionConstructorComponent.class));
+            context.bind(Component.class, InjectionConstructorComponent.class);
+            assertThrows(DependencyNotExists.class, () -> context.get(Component.class));
         }
 
         // 如果组件间存在循环依赖，则抛出异常

@@ -24,30 +24,32 @@ public class Context {
     }
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
-        try {
-            Constructor<?>[] injectionConstructors = stream(implementationClass.getConstructors()).filter(constructor -> constructor.isAnnotationPresent(Inject.class)).toArray(Constructor<?>[]::new);
-            if (injectionConstructors.length > 1) throw new MultipleInjectionFoundException();
-
-            if (injectionConstructors.length > 0) {
-                bindInjectionConstructorInstance(typeClass, injectionConstructors[0]);
-                return;
+        Constructor<?> constructor = getInjectionConstructor(implementationClass);
+        providers.put(typeClass, () -> {
+            try {
+                Object[] constructorParameters = stream(constructor.getParameterTypes())
+                        .map(parameterType -> get(parameterType).orElseThrow(DependencyNotExists::new))
+                        .toArray();
+                return constructor.newInstance(constructorParameters);
+            } catch (ReflectiveOperationException e) {
+                throw new UnsupportedOperationException(e);
             }
-            bindDefaultConstructorInstance(typeClass, implementationClass);
-        } catch (ReflectiveOperationException e) {
-            throw new UnsupportedOperationException(e);
-        }
+        });
     }
 
-    private <T> void bindInjectionConstructorInstance(Class<T> typeClass, Constructor<?> constructor) throws ReflectiveOperationException {
-        Object[] constructorParameters = stream(constructor.getParameterTypes())
-                .map(parameterType -> get(parameterType).orElseThrow(DependencyNotExists::new))
-                .toArray();
-        Object instance = constructor.newInstance(constructorParameters);
-        providers.put(typeClass, () -> instance);
+    private Constructor<?> getInjectionConstructor(Class<?> implementationClass) {
+        Constructor<?>[] injectionConstructors = stream(implementationClass.getConstructors())
+                .filter(constructor -> constructor.isAnnotationPresent(Inject.class))
+                .toArray(Constructor<?>[]::new);
+        if (injectionConstructors.length > 1) throw new MultipleInjectionFoundException();
+
+        return stream(injectionConstructors).findFirst().orElseGet(() -> {
+            try {
+                return implementationClass.getConstructor();
+            } catch (NoSuchMethodException e) {
+                throw new UnsupportedOperationException(e);
+            }
+        });
     }
 
-    private <T, I extends T> void bindDefaultConstructorInstance(Class<T> typeClass, Class<I> implementClass) throws ReflectiveOperationException {
-        I instance = implementClass.getConstructor().newInstance();
-        providers.put(typeClass, () -> instance);
-    }
 }
