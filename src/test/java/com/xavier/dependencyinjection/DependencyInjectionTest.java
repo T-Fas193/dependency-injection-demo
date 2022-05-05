@@ -1,8 +1,9 @@
 package com.xavier.dependencyinjection;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DependencyInjectionTest {
 
@@ -10,15 +11,16 @@ public class DependencyInjectionTest {
 
     // 无需构造的组件——组件实例
     @Nested
-    public class NonArgsConstructor {
+    class InstanceComponentBind {
 
         @Test
-        public void should_get_component() {
-            Component component = new Component(){};
+        void should_bind_if_giving_a_instance() {
+            Component component = new Component() {
+            };
             Context context = new Context();
             context.bind(Component.class, component);
 
-            Assertions.assertSame(component, context.get(Component.class));
+            assertSame(component, context.get(Component.class));
         }
 
     }
@@ -28,11 +30,23 @@ public class DependencyInjectionTest {
     // 接口
 
     // 构造函数注入
-    // 无依赖的组件应该通过默认构造函数生成组件实例
-    // 有依赖的组件，通过 Inject 标注的构造函数生成组件实例
-    // 如果所依赖的组件也存在依赖，那么需要对所依赖的组件也完成依赖注入
-    // 如果组件有多于一个 Inject 标注的构造函数，则抛出异常
-    // 如果组件需要的依赖不存在，则抛出异常如果组件间存在循环依赖，则抛出异常
+    @Nested
+    class ConstructorComponentBind {
+        // 无依赖的组件应该通过默认构造函数生成组件实例
+        @Test
+        void should_bind_if_class_has_default_constructor() {
+            Context context = new Context();
+            context.bind(Component.class, DefaultConstructorComponent.class);
+
+            Component component = context.get(Component.class);
+            assertNotNull(component);
+            assertTrue(component instanceof DefaultConstructorComponent);
+        }
+        // 有依赖的组件，通过 Inject 标注的构造函数生成组件实例
+        // 如果所依赖的组件也存在依赖，那么需要对所依赖的组件也完成依赖注入
+        // 如果组件有多于一个 Inject 标注的构造函数，则抛出异常
+        // 如果组件需要的依赖不存在，则抛出异常如果组件间存在循环依赖，则抛出异常
+    }
 
     // 字段注入
     // 通过 Inject 标注将字段声明为依赖组件
