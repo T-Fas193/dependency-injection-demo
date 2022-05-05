@@ -99,7 +99,7 @@ public class DependencyInjectionTest {
         // 如果组件有多于一个 Inject 标注的构造函数，则抛出异常
         @Test
         void should_throw_exception_if_implementation_has_multiple_injection_constructors() {
-            assertThrows(UnsupportedOperationException.class, () -> context.bind(Component.class, MultipleInjectionConstructorComponent.class));
+            assertThrows(MultipleInjectionFoundException.class, () -> context.bind(Component.class, MultipleInjectionConstructorComponent.class));
         }
 
         // 如果组件需要的依赖不存在，则抛出异常
