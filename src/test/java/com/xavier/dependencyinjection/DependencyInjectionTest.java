@@ -32,6 +32,7 @@ public class DependencyInjectionTest {
     // 构造函数注入
     @Nested
     class ConstructorComponentBind {
+
         // 无依赖的组件应该通过默认构造函数生成组件实例
         @Test
         void should_bind_if_class_has_default_constructor() {
@@ -42,7 +43,21 @@ public class DependencyInjectionTest {
             assertNotNull(component);
             assertTrue(component instanceof DefaultConstructorComponent);
         }
+
         // 有依赖的组件，通过 Inject 标注的构造函数生成组件实例
+        @Test
+        void should_bind_and_inject_if_class_has_injection_constructor(){
+            Context context = new Context();
+            Dependency dependency = new Dependency() {
+            };
+
+            context.bind(Dependency.class, dependency);
+            context.bind(Component.class, InjectionConstructorComponent.class);
+
+            InjectionConstructorComponent component = (InjectionConstructorComponent) context.get(Component.class);
+            assertNotNull(component);
+            assertSame(dependency, component.dependency());
+        }
         // 如果所依赖的组件也存在依赖，那么需要对所依赖的组件也完成依赖注入
         // 如果组件有多于一个 Inject 标注的构造函数，则抛出异常
         // 如果组件需要的依赖不存在，则抛出异常如果组件间存在循环依赖，则抛出异常
