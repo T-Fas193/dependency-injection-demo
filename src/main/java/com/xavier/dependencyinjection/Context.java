@@ -1,6 +1,7 @@
 package com.xavier.dependencyinjection;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
@@ -11,14 +12,14 @@ import static java.util.Optional.ofNullable;
 
 public class Context {
 
-    Map<Class<?>, Object> components = new HashMap<>();
+    private final Map<Class<?>, Provider<?>> providers = new HashMap<>();
 
     public <T> T get(Class<T> componentClass) {
-        return (T) components.get(componentClass);
+        return (T) providers.get(componentClass).get();
     }
 
     public <T, I extends T> void bind(Class<T> typeClass, I implementationInstance) {
-        components.put(typeClass, implementationInstance);
+        providers.put(typeClass, () -> implementationInstance);
     }
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
@@ -38,14 +39,14 @@ public class Context {
 
     private <T> void bindInjectionConstructorInstance(Class<T> typeClass, Constructor<?> constructor) throws ReflectiveOperationException {
         Object[] constructorParameters = stream(constructor.getParameterTypes())
-                .map(parameterType -> ofNullable(components.get(parameterType)).orElseThrow(DependencyNotExists::new))
+                .map(parameterType -> ofNullable(providers.get(parameterType)).orElseThrow(DependencyNotExists::new).get())
                 .toArray();
         Object instance = constructor.newInstance(constructorParameters);
-        components.put(typeClass, instance);
+        providers.put(typeClass, () -> instance);
     }
 
     private <T, I extends T> void bindDefaultConstructorInstance(Class<T> typeClass, Class<I> implementClass) throws ReflectiveOperationException {
         I instance = implementClass.getConstructor().newInstance();
-        components.put(typeClass, instance);
+        providers.put(typeClass, () -> instance);
     }
 }
