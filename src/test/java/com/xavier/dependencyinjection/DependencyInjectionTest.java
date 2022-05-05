@@ -34,7 +34,13 @@ public class DependencyInjectionTest {
         void should_throw_exception_if_no_default_constructor_nor_injection_constructor() {
             assertThrows(UnsupportedOperationException.class, () -> context.bind(Component.class, CannotInstanceComponent.class));
         }
+
         // 抽象类
+        @Test
+        void should_throw_exception_if_implementation_is_abstract_class() {
+            assertThrows(UnsupportedOperationException.class, () -> context.bind(Component.class, AbstractComponent.class));
+        }
+
         // 接口
 
     }
