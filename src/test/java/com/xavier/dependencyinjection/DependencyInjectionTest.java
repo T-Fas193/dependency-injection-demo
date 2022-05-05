@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Modifier;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -43,8 +44,7 @@ public class DependencyInjectionTest {
         // 抽象类
         @Test
         void should_throw_exception_if_implementation_is_abstract_class() {
-            context.bind(Component.class, AbstractComponent.class);
-            assertThrows(UnsupportedOperationException.class, () -> context.get(Component.class));
+            assertThrows(UnsupportedOperationException.class, () -> context.bind(Component.class, AbstractComponent.class));
         }
 
         // 接口

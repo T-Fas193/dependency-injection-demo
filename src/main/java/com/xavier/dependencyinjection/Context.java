@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -38,6 +39,8 @@ public class Context {
     }
 
     private Constructor<?> getInjectionConstructor(Class<?> implementationClass) {
+        if (classCannotInstance(implementationClass)) throw new UnsupportedOperationException();
+
         Constructor<?>[] injectionConstructors = stream(implementationClass.getConstructors())
                 .filter(constructor -> constructor.isAnnotationPresent(Inject.class))
                 .toArray(Constructor<?>[]::new);
@@ -50,6 +53,11 @@ public class Context {
                 throw new UnsupportedOperationException(e);
             }
         });
+    }
+
+    private boolean classCannotInstance(Class<?> implementationClass) {
+        int modifiers = implementationClass.getModifiers();
+        return Modifier.isAbstract(modifiers) || Modifier.isInterface(modifiers);
     }
 
 }
