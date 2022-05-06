@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -119,7 +120,13 @@ public class DependencyInjectionTest {
         void should_throw_exception_if_cyclic_dependency_found() {
             context.bind(Component.class, InjectionConstructorComponent.class);
             context.bind(Dependency.class, DependencyDependOnComponent.class);
-            assertThrows(CyclicDependencyFoundException.class, () -> context.get(Dependency.class));
+            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.get(Dependency.class));
+
+            List<?> dependencies = exception.getDependencies();
+            assertEquals(3, dependencies.size());
+            assertTrue(dependencies.contains(Component.class));
+            assertTrue(dependencies.contains(Dependency.class));
+            assertEquals("Dependency -> Component -> Dependency", exception.getMessage());
         }
 
         @Test
@@ -127,7 +134,14 @@ public class DependencyInjectionTest {
             context.bind(Component.class, InjectionConstructorComponent.class);
             context.bind(Dependency.class, DependencyDependOnAnotherDependency.class);
             context.bind(AnotherDependency.class, AnotherDependencyDependOnComponentDependency.class);
-            assertThrows(CyclicDependencyFoundException.class, () -> context.get(Dependency.class));
+            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.get(Dependency.class));
+
+            List<?> dependencies = exception.getDependencies();
+            assertEquals(4, dependencies.size());
+            assertTrue(dependencies.contains(Component.class));
+            assertTrue(dependencies.contains(Dependency.class));
+            assertTrue(dependencies.contains(AnotherDependency.class));
+            assertEquals("Dependency -> AnotherDependency -> Component -> Dependency", exception.getMessage());
         }
     }
 

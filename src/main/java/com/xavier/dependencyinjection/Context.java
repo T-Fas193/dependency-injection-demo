@@ -26,28 +26,32 @@ public class Context {
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
         Constructor<?> constructor = getInjectionConstructor(implementationClass);
-        providers.put(typeClass, new ComponentProvider<>(constructor));
+        providers.put(typeClass, new ComponentProvider<>(constructor, typeClass));
     }
 
     class ComponentProvider<T> implements Provider<T> {
 
         private final Constructor<T> constructor;
+        private final Class<?> typeClass;
 
         private boolean constructing = false;
 
-        ComponentProvider(Constructor<T> constructor) {
+        ComponentProvider(Constructor<T> constructor, Class<?> typeClass) {
             this.constructor = constructor;
+            this.typeClass = typeClass;
         }
 
         @Override
         public T get() {
-            if (constructing) throw new CyclicDependencyFoundException();
+            if (constructing) throw new CyclicDependencyFoundException(typeClass);
             try {
                 constructing = true;
                 Object[] constructorParameters = stream(constructor.getParameterTypes())
                         .map(parameterType -> Context.this.get(parameterType).orElseThrow(DependencyNotFoundException::new))
                         .toArray();
                 return constructor.newInstance(constructorParameters);
+            } catch (CyclicDependencyFoundException e) {
+                throw new CyclicDependencyFoundException(typeClass, e.getDependencies());
             } catch (ReflectiveOperationException e) {
                 throw new UnsupportedOperationException(e);
             } finally {
