@@ -118,7 +118,7 @@ public class DependencyInjectionTest {
         @Test
         void should_throw_exception_if_cyclic_dependency_found() {
             context.bind(Component.class, InjectionConstructorComponent.class);
-            context.bind(Dependency.class, DependOnComponentDependency.class);
+            context.bind(Dependency.class, DependencyDependOnComponent.class);
             assertThrows(CyclicDependencyFoundException.class, () -> context.get(Dependency.class));
         }
 
