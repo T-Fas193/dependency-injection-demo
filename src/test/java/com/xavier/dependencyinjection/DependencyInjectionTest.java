@@ -5,7 +5,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Modifier;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -116,6 +115,12 @@ public class DependencyInjectionTest {
         }
 
         // 如果组件间存在循环依赖，则抛出异常
+        @Test
+        void should_throw_exception_if_cyclic_dependency_found() {
+            context.bind(Component.class, InjectionConstructorComponent.class);
+            context.bind(Dependency.class, DependOnComponentDependency.class);
+            assertThrows(CyclicDependencyFoundException.class, () -> context.get(Dependency.class));
+        }
     }
 
     // 字段注入

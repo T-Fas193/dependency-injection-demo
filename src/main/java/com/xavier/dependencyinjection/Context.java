@@ -14,6 +14,7 @@ import static java.util.Arrays.stream;
 public class Context {
 
     private final Map<Class<?>, Provider<?>> providers = new HashMap<>();
+    private final Map<Class<?>, Constructor<?>> constructors = new HashMap<>();
 
     public <T> Optional<T> get(Class<T> componentClass) {
         return Optional.ofNullable(providers.get(componentClass)).map(provider -> (T) provider.get());
@@ -26,9 +27,11 @@ public class Context {
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
         Constructor<?> constructor = getInjectionConstructor(implementationClass);
+        constructors.put(typeClass, constructor);
         providers.put(typeClass, () -> {
             try {
                 Object[] constructorParameters = stream(constructor.getParameterTypes())
+                        .map(parameterType -> checkCyclicDependency(typeClass, parameterType))
                         .map(parameterType -> get(parameterType).orElseThrow(DependencyNotExists::new))
                         .toArray();
                 return constructor.newInstance(constructorParameters);
@@ -36,6 +39,18 @@ public class Context {
                 throw new UnsupportedOperationException(e);
             }
         });
+    }
+
+    private <T> Class<?> checkCyclicDependency(Class<T> typeClass, Class<?> parameterType) {
+        if (!constructors.containsKey(parameterType)) return parameterType;
+
+        Constructor<?> parameterConstructor = constructors.get(parameterType);
+        stream(parameterConstructor.getParameterTypes())
+                .filter(parameterConstructorInjection -> parameterConstructorInjection.equals(typeClass))
+                .findAny().ifPresent(cyclicClass -> {
+                    throw new CyclicDependencyFoundException();
+                });
+        return parameterType;
     }
 
     private Constructor<?> getInjectionConstructor(Class<?> implementationClass) {
