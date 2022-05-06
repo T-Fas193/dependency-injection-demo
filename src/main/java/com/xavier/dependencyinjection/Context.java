@@ -14,7 +14,6 @@ import static java.util.Arrays.stream;
 public class Context {
 
     private final Map<Class<?>, Provider<?>> providers = new HashMap<>();
-    private final Map<Class<?>, Constructor<?>> constructors = new HashMap<>();
 
     public <T> Optional<T> get(Class<T> componentClass) {
         return Optional.ofNullable(providers.get(componentClass)).map(provider -> (T) provider.get());
@@ -27,30 +26,34 @@ public class Context {
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
         Constructor<?> constructor = getInjectionConstructor(implementationClass);
-        constructors.put(typeClass, constructor);
-        providers.put(typeClass, () -> {
+        providers.put(typeClass, new ComponentProvider<>(constructor));
+    }
+
+    class ComponentProvider<T> implements Provider<T> {
+
+        private final Constructor<T> constructor;
+
+        private boolean constructing = false;
+
+        ComponentProvider(Constructor<T> constructor) {
+            this.constructor = constructor;
+        }
+
+        @Override
+        public T get() {
+            if (constructing) throw new CyclicDependencyFoundException();
             try {
+                constructing = true;
                 Object[] constructorParameters = stream(constructor.getParameterTypes())
-                        .map(parameterType -> checkCyclicDependency(typeClass, parameterType))
-                        .map(parameterType -> get(parameterType).orElseThrow(DependencyNotFoundException::new))
+                        .map(parameterType -> Context.this.get(parameterType).orElseThrow(DependencyNotFoundException::new))
                         .toArray();
                 return constructor.newInstance(constructorParameters);
             } catch (ReflectiveOperationException e) {
                 throw new UnsupportedOperationException(e);
+            } finally {
+                constructing = false;
             }
-        });
-    }
-
-    private <T> Class<?> checkCyclicDependency(Class<T> typeClass, Class<?> parameterType) {
-        if (!constructors.containsKey(parameterType)) return parameterType;
-
-        Constructor<?> parameterConstructor = constructors.get(parameterType);
-        stream(parameterConstructor.getParameterTypes())
-                .filter(parameterConstructorInjection -> parameterConstructorInjection.equals(typeClass))
-                .findAny().ifPresent(cyclicClass -> {
-                    throw new CyclicDependencyFoundException();
-                });
-        return parameterType;
+        }
     }
 
     private Constructor<?> getInjectionConstructor(Class<?> implementationClass) {

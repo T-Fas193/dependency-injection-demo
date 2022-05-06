@@ -121,6 +121,14 @@ public class DependencyInjectionTest {
             context.bind(Dependency.class, DependOnComponentDependency.class);
             assertThrows(CyclicDependencyFoundException.class, () -> context.get(Dependency.class));
         }
+
+        @Test
+        void should_throw_exception_if_transitive_cyclic_dependency_found() {
+            context.bind(Component.class, InjectionConstructorComponent.class);
+            context.bind(Dependency.class, DependencyDependOnAnotherDependency.class);
+            context.bind(AnotherDependency.class, AnotherDependencyDependOnComponentDependency.class);
+            assertThrows(CyclicDependencyFoundException.class, () -> context.get(Dependency.class));
+        }
     }
 
     // 字段注入
