@@ -32,7 +32,7 @@ public class Context {
             try {
                 Object[] constructorParameters = stream(constructor.getParameterTypes())
                         .map(parameterType -> checkCyclicDependency(typeClass, parameterType))
-                        .map(parameterType -> get(parameterType).orElseThrow(DependencyNotExists::new))
+                        .map(parameterType -> get(parameterType).orElseThrow(DependencyNotFoundException::new))
                         .toArray();
                 return constructor.newInstance(constructorParameters);
             } catch (ReflectiveOperationException e) {

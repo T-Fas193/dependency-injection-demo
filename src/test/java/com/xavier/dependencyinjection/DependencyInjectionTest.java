@@ -111,7 +111,7 @@ public class DependencyInjectionTest {
         @Test
         void should_throw_exception_if_dependency_not_exist() {
             context.bind(Component.class, InjectionConstructorComponent.class);
-            assertThrows(DependencyNotExists.class, () -> context.get(Component.class));
+            assertThrows(DependencyNotFoundException.class, () -> context.get(Component.class));
         }
 
         // 如果组件间存在循环依赖，则抛出异常
