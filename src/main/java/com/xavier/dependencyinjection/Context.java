@@ -47,7 +47,7 @@ public class Context {
             try {
                 constructing = true;
                 Object[] constructorParameters = stream(constructor.getParameterTypes())
-                        .map(parameterType -> Context.this.get(parameterType).orElseThrow(DependencyNotFoundException::new))
+                        .map(parameterType -> Context.this.get(parameterType).orElseThrow(() -> new DependencyNotFoundException(typeClass, parameterType)))
                         .toArray();
                 return constructor.newInstance(constructorParameters);
             } catch (CyclicDependencyFoundException e) {
