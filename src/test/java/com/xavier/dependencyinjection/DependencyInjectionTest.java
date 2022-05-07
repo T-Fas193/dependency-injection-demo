@@ -30,7 +30,7 @@ public class DependencyInjectionTest {
             };
             context.bind(Component.class, component);
 
-            Optional<Component> bindComponent = context.get(Component.class);
+            Optional<Component> bindComponent = context.getContainer().get(Component.class);
             assertTrue(bindComponent.isPresent());
             assertSame(component, bindComponent.get());
         }
@@ -68,7 +68,7 @@ public class DependencyInjectionTest {
         void should_bind_if_class_has_default_constructor() {
             context.bind(Component.class, DefaultConstructorComponent.class);
 
-            Optional<Component> bindComponent = context.get(Component.class);
+            Optional<Component> bindComponent = context.getContainer().get(Component.class);
             assertTrue(bindComponent.isPresent());
             Assertions.assertTrue(bindComponent.get() instanceof DefaultConstructorComponent);
         }
@@ -82,7 +82,7 @@ public class DependencyInjectionTest {
             context.bind(Dependency.class, dependency);
             context.bind(Component.class, InjectionConstructorComponent.class);
 
-            Optional<Component> component = context.get(Component.class);
+            Optional<Component> component = context.getContainer().get(Component.class);
             assertTrue(component.isPresent());
             assertSame(dependency, ((InjectionConstructorComponent) component.get()).dependency());
         }
@@ -95,7 +95,7 @@ public class DependencyInjectionTest {
             context.bind(Dependency.class, StringConstructorDependency.class);
             context.bind(Component.class, InjectionConstructorComponent.class);
 
-            Optional<Component> component = context.get(Component.class);
+            Optional<Component> component = context.getContainer().get(Component.class);
             assertTrue(component.isPresent());
             StringConstructorDependency dependency = (StringConstructorDependency) ((InjectionConstructorComponent) component.get()).dependency();
             assertNotNull(dependency);
@@ -112,7 +112,7 @@ public class DependencyInjectionTest {
         @Test
         void should_throw_exception_if_dependency_not_exist() {
             context.bind(Component.class, InjectionConstructorComponent.class);
-            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> context.get(Component.class));
+            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> context.getContainer().get(Component.class));
 
             List<Class<?>> dependencies = exception.getDependencies();
             assertEquals(2, dependencies.size());
@@ -126,7 +126,7 @@ public class DependencyInjectionTest {
         void should_throw_exception_if_cyclic_dependency_found() {
             context.bind(Component.class, InjectionConstructorComponent.class);
             context.bind(Dependency.class, DependencyDependOnComponent.class);
-            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.get(Dependency.class));
+            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.getContainer().get(Dependency.class));
 
             List<?> dependencies = exception.getDependencies();
             assertEquals(3, dependencies.size());
@@ -140,7 +140,7 @@ public class DependencyInjectionTest {
             context.bind(Component.class, InjectionConstructorComponent.class);
             context.bind(Dependency.class, DependencyDependOnAnotherDependency.class);
             context.bind(AnotherDependency.class, AnotherDependencyDependOnComponentDependency.class);
-            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.get(Dependency.class));
+            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.getContainer().get(Dependency.class));
 
             List<?> dependencies = exception.getDependencies();
             assertEquals(4, dependencies.size());

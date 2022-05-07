@@ -13,10 +13,21 @@ import static java.util.Arrays.stream;
 
 public class Context {
 
+    interface ComponentContainer {
+
+        <T> Optional<T> get(Class<T> componentClass);
+
+    }
+
     private final Map<Class<?>, Provider<?>> providers = new HashMap<>();
 
-    public <T> Optional<T> get(Class<T> componentClass) {
-        return Optional.ofNullable(providers.get(componentClass)).map(provider -> (T) provider.get());
+    public ComponentContainer getContainer() {
+        return new ComponentContainer() {
+            @Override
+            public <T> Optional<T> get(Class<T> componentClass) {
+                return Optional.ofNullable(providers.get(componentClass)).map(provider -> (T) provider.get());
+            }
+        };
     }
 
 
@@ -47,7 +58,7 @@ public class Context {
             try {
                 constructing = true;
                 Object[] constructorParameters = stream(constructor.getParameterTypes())
-                        .map(parameterType -> Context.this.get(parameterType).orElseThrow(() -> new DependencyNotFoundException(typeClass, parameterType)))
+                        .map(parameterType -> getContainer().get(parameterType).orElseThrow(() -> new DependencyNotFoundException(typeClass, parameterType)))
                         .toArray();
                 return constructor.newInstance(constructorParameters);
             } catch (CyclicDependencyFoundException e) {
