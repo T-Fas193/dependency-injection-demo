@@ -1,7 +1,6 @@
 package com.xavier.dependencyinjection;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Provider;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
@@ -20,9 +19,16 @@ public class Context {
 
     }
 
-    private final Map<Class<?>, Provider<?>> providers = new HashMap<>();
+    interface ComponentProvider<T> {
+
+        T get();
+
+    }
+
+    private final Map<Class<?>, ComponentProvider<?>> providers = new HashMap<>();
 
     public ComponentContainer getContainer() {
+
         return new ComponentContainer() {
             @Override
             public <T> Optional<T> get(Class<T> componentClass) {
@@ -38,17 +44,17 @@ public class Context {
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
         Constructor<?> constructor = getInjectionConstructor(implementationClass);
-        providers.put(typeClass, new ComponentProvider<>(constructor, typeClass));
+        providers.put(typeClass, new DefaultComponentProvider<>(constructor, typeClass));
     }
 
-    class ComponentProvider<T> implements Provider<T> {
+    class DefaultComponentProvider<T> implements ComponentProvider<T> {
 
         private final Constructor<T> constructor;
         private final Class<?> typeClass;
 
         private boolean constructing = false;
 
-        ComponentProvider(Constructor<T> constructor, Class<?> typeClass) {
+        DefaultComponentProvider(Constructor<T> constructor, Class<?> typeClass) {
             this.constructor = constructor;
             this.typeClass = typeClass;
         }
