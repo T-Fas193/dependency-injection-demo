@@ -112,7 +112,7 @@ public class DependencyInjectionTest {
         @Test
         void should_throw_exception_if_dependency_not_exist() {
             context.bind(Component.class, InjectionConstructorComponent.class);
-            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> context.getContainer().get(Component.class));
+            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> context.getContainer());
 
             List<Class<?>> dependencies = exception.getDependencies();
             assertEquals(2, dependencies.size());
@@ -125,7 +125,7 @@ public class DependencyInjectionTest {
         void should_throw_exception_if_transitive_dependency_not_exist() {
             context.bind(Component.class, InjectionConstructorComponent.class);
             context.bind(Dependency.class, DependencyDependOnAnotherDependency.class);
-            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> context.getContainer().get(Component.class));
+            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> context.getContainer());
 
             List<Class<?>> dependencies = exception.getDependencies();
             assertEquals(3, dependencies.size());
@@ -140,7 +140,7 @@ public class DependencyInjectionTest {
         void should_throw_exception_if_cyclic_dependency_found() {
             context.bind(Component.class, InjectionConstructorComponent.class);
             context.bind(Dependency.class, DependencyDependOnComponent.class);
-            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.getContainer().get(Dependency.class));
+            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.getContainer());
 
             List<?> dependencies = exception.getDependencies();
             assertEquals(3, dependencies.size());
@@ -154,7 +154,7 @@ public class DependencyInjectionTest {
             context.bind(Component.class, InjectionConstructorComponent.class);
             context.bind(Dependency.class, DependencyDependOnAnotherDependency.class);
             context.bind(AnotherDependency.class, AnotherDependencyDependOnComponentDependency.class);
-            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.getContainer().get(Dependency.class));
+            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.getContainer());
 
             List<?> dependencies = exception.getDependencies();
             assertEquals(4, dependencies.size());

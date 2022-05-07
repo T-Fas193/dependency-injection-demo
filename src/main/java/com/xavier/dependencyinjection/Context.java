@@ -4,10 +4,7 @@ import jakarta.inject.Inject;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static java.util.Arrays.stream;
 
@@ -23,11 +20,17 @@ public class Context {
 
         T get();
 
+        void check();
+
     }
 
     private final Map<Class<?>, ComponentProvider<?>> providers = new HashMap<>();
+    private final Map<Class<?>, List<Class<?>>> parameterProviders = new HashMap<>();
 
     public ComponentContainer getContainer() {
+        providers.forEach((key, value) -> {
+            value.check();
+        });
 
         return new ComponentContainer() {
             @Override
@@ -39,11 +42,22 @@ public class Context {
 
 
     public <T, I extends T> void bind(Class<T> typeClass, I implementationInstance) {
-        providers.put(typeClass, () -> implementationInstance);
+        providers.put(typeClass, new ComponentProvider<Object>() {
+            @Override
+            public Object get() {
+                return implementationInstance;
+            }
+
+            @Override
+            public void check() {
+
+            }
+        });
     }
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
         Constructor<?> constructor = getInjectionConstructor(implementationClass);
+        parameterProviders.put(typeClass, Arrays.asList(constructor.getParameterTypes()));
         providers.put(typeClass, new DefaultComponentProvider<>(constructor, typeClass));
     }
 
@@ -53,6 +67,8 @@ public class Context {
         private final Class<?> typeClass;
 
         private boolean constructing = false;
+
+        private boolean checking = false;
 
         DefaultComponentProvider(Constructor<T> constructor, Class<?> typeClass) {
             this.constructor = constructor;
@@ -76,6 +92,25 @@ public class Context {
                 throw new UnsupportedOperationException(e);
             } finally {
                 constructing = false;
+            }
+        }
+
+        @Override
+        public void check() {
+            if (checking) throw new CyclicDependencyFoundException(typeClass);
+            try {
+                checking = true;
+                stream(constructor.getParameterTypes()).forEach(parameterType -> {
+                    Optional.ofNullable(providers.get(parameterType))
+                            .orElseThrow(() -> new DependencyNotFoundException(parameterType, Collections.emptyList()))
+                            .check();
+                });
+            } catch (CyclicDependencyFoundException e) {
+                throw new CyclicDependencyFoundException(typeClass, e.getDependencies());
+            } catch (DependencyNotFoundException e) {
+                throw new DependencyNotFoundException(typeClass, e.getDependencies());
+            } finally {
+                checking = false;
             }
         }
     }
