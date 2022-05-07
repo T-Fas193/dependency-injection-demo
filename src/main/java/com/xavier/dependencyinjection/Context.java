@@ -5,6 +5,7 @@ import jakarta.inject.Provider;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -58,11 +59,13 @@ public class Context {
             try {
                 constructing = true;
                 Object[] constructorParameters = stream(constructor.getParameterTypes())
-                        .map(parameterType -> getContainer().get(parameterType).orElseThrow(() -> new DependencyNotFoundException(typeClass, parameterType)))
+                        .map(parameterType -> getContainer().get(parameterType).orElseThrow(() -> new DependencyNotFoundException(parameterType, Collections.emptyList())))
                         .toArray();
                 return constructor.newInstance(constructorParameters);
             } catch (CyclicDependencyFoundException e) {
                 throw new CyclicDependencyFoundException(typeClass, e.getDependencies());
+            } catch (DependencyNotFoundException e) {
+                throw new DependencyNotFoundException(typeClass, e.getDependencies());
             } catch (ReflectiveOperationException e) {
                 throw new UnsupportedOperationException(e);
             } finally {

@@ -121,6 +121,20 @@ public class DependencyInjectionTest {
             assertEquals("Component -> Dependency not found", exception.getMessage());
         }
 
+        @Test
+        void should_throw_exception_if_transitive_dependency_not_exist() {
+            context.bind(Component.class, InjectionConstructorComponent.class);
+            context.bind(Dependency.class, DependencyDependOnAnotherDependency.class);
+            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> context.getContainer().get(Component.class));
+
+            List<Class<?>> dependencies = exception.getDependencies();
+            assertEquals(3, dependencies.size());
+            assertTrue(dependencies.contains(Component.class));
+            assertTrue(dependencies.contains(AnotherDependency.class));
+            assertTrue(dependencies.contains(Dependency.class));
+            assertEquals("Component -> Dependency -> AnotherDependency not found", exception.getMessage());
+        }
+
         // 如果组件间存在循环依赖，则抛出异常
         @Test
         void should_throw_exception_if_cyclic_dependency_found() {
