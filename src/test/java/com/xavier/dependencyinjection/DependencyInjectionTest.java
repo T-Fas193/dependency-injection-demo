@@ -11,7 +11,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DependencyInjectionTest {
-    private Context context;
+    private ContextConfig contextConfig;
 
     // 对于组件构造部分，我分解的任务如下：
 
@@ -20,7 +20,7 @@ public class DependencyInjectionTest {
 
         @BeforeEach
         void setup() {
-            context = new Context();
+            contextConfig = new ContextConfig();
         }
 
         // 无需构造的组件——组件实例
@@ -28,9 +28,9 @@ public class DependencyInjectionTest {
         void should_bind_if_giving_a_instance() {
             Component component = new Component() {
             };
-            context.bind(Component.class, component);
+            contextConfig.bind(Component.class, component);
 
-            Optional<Component> bindComponent = context.getContainer().get(Component.class);
+            Optional<Component> bindComponent = contextConfig.getContainer().get(Component.class);
             assertTrue(bindComponent.isPresent());
             assertSame(component, bindComponent.get());
         }
@@ -38,19 +38,19 @@ public class DependencyInjectionTest {
         // 如果注册的组件不可实例化，则抛出异常
         @Test
         void should_throw_exception_if_no_default_constructor_nor_injection_constructor() {
-            assertThrows(UnsupportedOperationException.class, () -> context.bind(Component.class, CannotInstanceComponent.class));
+            assertThrows(UnsupportedOperationException.class, () -> contextConfig.bind(Component.class, CannotInstanceComponent.class));
         }
 
         // 抽象类
         @Test
         void should_throw_exception_if_implementation_is_abstract_class() {
-            assertThrows(UnsupportedOperationException.class, () -> context.bind(Component.class, AbstractComponent.class));
+            assertThrows(UnsupportedOperationException.class, () -> contextConfig.bind(Component.class, AbstractComponent.class));
         }
 
         // 接口
         @Test
         void should_throw_exception_if_implementation_is_interface() {
-            assertThrows(UnsupportedOperationException.class, () -> context.bind(Component.class, Component.class));
+            assertThrows(UnsupportedOperationException.class, () -> contextConfig.bind(Component.class, Component.class));
         }
     }
 
@@ -60,15 +60,15 @@ public class DependencyInjectionTest {
 
         @BeforeEach
         void setup() {
-            context = new Context();
+            contextConfig = new ContextConfig();
         }
 
         // 无依赖的组件应该通过默认构造函数生成组件实例
         @Test
         void should_bind_if_class_has_default_constructor() {
-            context.bind(Component.class, DefaultConstructorComponent.class);
+            contextConfig.bind(Component.class, DefaultConstructorComponent.class);
 
-            Optional<Component> bindComponent = context.getContainer().get(Component.class);
+            Optional<Component> bindComponent = contextConfig.getContainer().get(Component.class);
             assertTrue(bindComponent.isPresent());
             Assertions.assertTrue(bindComponent.get() instanceof DefaultConstructorComponent);
         }
@@ -79,10 +79,10 @@ public class DependencyInjectionTest {
             Dependency dependency = new Dependency() {
             };
 
-            context.bind(Dependency.class, dependency);
-            context.bind(Component.class, InjectionConstructorComponent.class);
+            contextConfig.bind(Dependency.class, dependency);
+            contextConfig.bind(Component.class, InjectionConstructorComponent.class);
 
-            Optional<Component> component = context.getContainer().get(Component.class);
+            Optional<Component> component = contextConfig.getContainer().get(Component.class);
             assertTrue(component.isPresent());
             assertSame(dependency, ((InjectionConstructorComponent) component.get()).dependency());
         }
@@ -91,11 +91,11 @@ public class DependencyInjectionTest {
         @Test
         void should_bind_and_inject_if_class_has_transitive_constructor() {
             String stringComponent = "this is a string component";
-            context.bind(String.class, stringComponent);
-            context.bind(Dependency.class, StringConstructorDependency.class);
-            context.bind(Component.class, InjectionConstructorComponent.class);
+            contextConfig.bind(String.class, stringComponent);
+            contextConfig.bind(Dependency.class, StringConstructorDependency.class);
+            contextConfig.bind(Component.class, InjectionConstructorComponent.class);
 
-            Optional<Component> component = context.getContainer().get(Component.class);
+            Optional<Component> component = contextConfig.getContainer().get(Component.class);
             assertTrue(component.isPresent());
             StringConstructorDependency dependency = (StringConstructorDependency) ((InjectionConstructorComponent) component.get()).dependency();
             assertNotNull(dependency);
@@ -105,14 +105,14 @@ public class DependencyInjectionTest {
         // 如果组件有多于一个 Inject 标注的构造函数，则抛出异常
         @Test
         void should_throw_exception_if_implementation_has_multiple_injection_constructors() {
-            assertThrows(MultipleInjectionFoundException.class, () -> context.bind(Component.class, MultipleInjectionConstructorComponent.class));
+            assertThrows(MultipleInjectionFoundException.class, () -> contextConfig.bind(Component.class, MultipleInjectionConstructorComponent.class));
         }
 
         // 如果组件需要的依赖不存在，则抛出异常
         @Test
         void should_throw_exception_if_dependency_not_exist() {
-            context.bind(Component.class, InjectionConstructorComponent.class);
-            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> context.getContainer());
+            contextConfig.bind(Component.class, InjectionConstructorComponent.class);
+            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> contextConfig.getContainer());
 
             List<Class<?>> dependencies = exception.getDependencies();
             assertEquals(2, dependencies.size());
@@ -123,9 +123,9 @@ public class DependencyInjectionTest {
 
         @Test
         void should_throw_exception_if_transitive_dependency_not_exist() {
-            context.bind(Component.class, InjectionConstructorComponent.class);
-            context.bind(Dependency.class, DependencyDependOnAnotherDependency.class);
-            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> context.getContainer());
+            contextConfig.bind(Component.class, InjectionConstructorComponent.class);
+            contextConfig.bind(Dependency.class, DependencyDependOnAnotherDependency.class);
+            DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> contextConfig.getContainer());
 
             List<Class<?>> dependencies = exception.getDependencies();
             assertTrue(dependencies.size() >= 2);
@@ -137,9 +137,9 @@ public class DependencyInjectionTest {
         // 如果组件间存在循环依赖，则抛出异常
         @Test
         void should_throw_exception_if_cyclic_dependency_found() {
-            context.bind(Component.class, InjectionConstructorComponent.class);
-            context.bind(Dependency.class, DependencyDependOnComponent.class);
-            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.getContainer());
+            contextConfig.bind(Component.class, InjectionConstructorComponent.class);
+            contextConfig.bind(Dependency.class, DependencyDependOnComponent.class);
+            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> contextConfig.getContainer());
 
             List<?> dependencies = exception.getDependencies();
             assertEquals(3, dependencies.size());
@@ -150,10 +150,10 @@ public class DependencyInjectionTest {
 
         @Test
         void should_throw_exception_if_transitive_cyclic_dependency_found() {
-            context.bind(Component.class, InjectionConstructorComponent.class);
-            context.bind(Dependency.class, DependencyDependOnAnotherDependency.class);
-            context.bind(AnotherDependency.class, AnotherDependencyDependOnComponentDependency.class);
-            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> context.getContainer());
+            contextConfig.bind(Component.class, InjectionConstructorComponent.class);
+            contextConfig.bind(Dependency.class, DependencyDependOnAnotherDependency.class);
+            contextConfig.bind(AnotherDependency.class, AnotherDependencyDependOnComponentDependency.class);
+            CyclicDependencyFoundException exception = assertThrows(CyclicDependencyFoundException.class, () -> contextConfig.getContainer());
 
             List<?> dependencies = exception.getDependencies();
             assertEquals(4, dependencies.size());

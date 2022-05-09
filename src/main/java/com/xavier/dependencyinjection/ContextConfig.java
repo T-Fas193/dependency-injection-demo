@@ -8,7 +8,7 @@ import java.util.*;
 
 import static java.util.Arrays.stream;
 
-public class Context {
+public class ContextConfig {
 
     interface ComponentContainer {
 
@@ -28,9 +28,7 @@ public class Context {
     private final Map<Class<?>, List<Class<?>>> parameterProviders = new HashMap<>();
 
     public ComponentContainer getContainer() {
-        providers.forEach((key, value) -> {
-            value.check();
-        });
+        providers.forEach((key, value) -> value.check());
 
         return new ComponentContainer() {
             @Override
@@ -42,7 +40,7 @@ public class Context {
 
 
     public <T, I extends T> void bind(Class<T> typeClass, I implementationInstance) {
-        providers.put(typeClass, new ComponentProvider<Object>() {
+        providers.put(typeClass, new ComponentProvider<>() {
             @Override
             public Object get() {
                 return implementationInstance;
@@ -50,7 +48,7 @@ public class Context {
 
             @Override
             public void check() {
-
+                // no implementation needs here
             }
         });
     }
@@ -100,11 +98,9 @@ public class Context {
             if (checking) throw new CyclicDependencyFoundException(typeClass);
             try {
                 checking = true;
-                stream(constructor.getParameterTypes()).forEach(parameterType -> {
-                    Optional.ofNullable(providers.get(parameterType))
-                            .orElseThrow(() -> new DependencyNotFoundException(parameterType, Collections.emptyList()))
-                            .check();
-                });
+                stream(constructor.getParameterTypes()).forEach(parameterType -> Optional.ofNullable(providers.get(parameterType))
+                        .orElseThrow(() -> new DependencyNotFoundException(parameterType, Collections.emptyList()))
+                        .check());
             } catch (CyclicDependencyFoundException e) {
                 throw new CyclicDependencyFoundException(typeClass, e.getDependencies());
             } catch (DependencyNotFoundException e) {
