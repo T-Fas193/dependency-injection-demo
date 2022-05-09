@@ -5,18 +5,17 @@ import jakarta.inject.Inject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
+import static com.xavier.dependencyinjection.ContextConfig.ComponentProvider;
+import static com.xavier.dependencyinjection.ContextConfig.Context;
 import static java.util.Arrays.stream;
 
-class DefaultComponentProvider<T> implements ContextConfig.ComponentProvider<T> {
+class DefaultComponentProvider<T> implements ComponentProvider<T> {
 
-    private final ContextConfig contextConfig;
     private final Constructor<T> constructor;
 
-    DefaultComponentProvider(ContextConfig contextConfig, Class<T> implementationClass) {
-        this.contextConfig = contextConfig;
+    DefaultComponentProvider(Class<T> implementationClass) {
         this.constructor = (Constructor<T>) getInjectionConstructor(implementationClass);
     }
 
@@ -40,10 +39,10 @@ class DefaultComponentProvider<T> implements ContextConfig.ComponentProvider<T> 
     }
 
     @Override
-    public T get() {
+    public T get(Context context) {
         try {
             Object[] constructorParameters = stream(constructor.getParameterTypes())
-                    .map(parameterType -> contextConfig.getContext().get(parameterType).orElseThrow(() -> new DependencyNotFoundException(parameterType, Collections.emptyList())))
+                    .map(parameterType -> context.get(parameterType).orElse(null))
                     .toArray();
             return constructor.newInstance(constructorParameters);
         } catch (ReflectiveOperationException e) {

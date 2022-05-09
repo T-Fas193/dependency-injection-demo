@@ -12,7 +12,7 @@ public class ContextConfig {
 
     interface ComponentProvider<T> {
 
-        T get();
+        T get(Context context);
 
         List<Class<?>> getDependencies();
 
@@ -30,7 +30,7 @@ public class ContextConfig {
         return new Context() {
             @Override
             public <T> Optional<T> get(Class<T> componentClass) {
-                return Optional.ofNullable(providers.get(componentClass)).map(provider -> (T) provider.get());
+                return Optional.ofNullable(providers.get(componentClass)).map(provider -> (T) provider.get(this));
             }
         };
     }
@@ -51,8 +51,9 @@ public class ContextConfig {
 
     public <T, I extends T> void bind(Class<T> typeClass, I implementationInstance) {
         providers.put(typeClass, new ComponentProvider<>() {
+
             @Override
-            public Object get() {
+            public Object get(Context context) {
                 return implementationInstance;
             }
 
@@ -64,7 +65,7 @@ public class ContextConfig {
     }
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
-        providers.put(typeClass, new DefaultComponentProvider<>(this, implementationClass));
+        providers.put(typeClass, new DefaultComponentProvider<>(implementationClass));
     }
 
 }
