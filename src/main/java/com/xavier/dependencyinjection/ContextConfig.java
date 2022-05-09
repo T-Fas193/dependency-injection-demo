@@ -4,7 +4,10 @@ import jakarta.inject.Inject;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Arrays.stream;
 
@@ -25,7 +28,6 @@ public class ContextConfig {
     }
 
     private final Map<Class<?>, ComponentProvider<?>> providers = new HashMap<>();
-    private final Map<Class<?>, List<Class<?>>> parameterProviders = new HashMap<>();
 
     public ComponentContainer getContainer() {
         providers.forEach((key, value) -> value.check());
@@ -55,7 +57,6 @@ public class ContextConfig {
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
         Constructor<?> constructor = getInjectionConstructor(implementationClass);
-        parameterProviders.put(typeClass, Arrays.asList(constructor.getParameterTypes()));
         providers.put(typeClass, new DefaultComponentProvider<>(constructor, typeClass));
     }
 
