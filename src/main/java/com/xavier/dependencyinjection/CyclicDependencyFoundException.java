@@ -9,10 +9,6 @@ public class CyclicDependencyFoundException extends RuntimeException {
 
     private final List<Class<?>> dependencies = new ArrayList<>();
 
-    public CyclicDependencyFoundException(Class<?> dependency) {
-        dependencies.add(dependency);
-    }
-
     public CyclicDependencyFoundException(Class<?> dependency, List<Class<?>> existDependencies) {
         dependencies.add(dependency);
         dependencies.addAll(existDependencies);

@@ -20,8 +20,6 @@ public class ContextConfig {
 
         T get();
 
-        void check();
-
         List<Class<?>> getDependencies();
 
     }
@@ -33,7 +31,7 @@ public class ContextConfig {
             if (!providers.containsKey(dependency))
                 throw new DependencyNotFoundException(key, Collections.singletonList(dependency));
         }));
-        providers.forEach((key, value) -> value.check());
+        providers.keySet().forEach(key -> checkCyclicDependency(key, new ArrayDeque<>()));
 
         return new Context() {
             @Override
@@ -41,6 +39,19 @@ public class ContextConfig {
                 return Optional.ofNullable(providers.get(componentClass)).map(provider -> (T) provider.get());
             }
         };
+    }
+
+    private void checkCyclicDependency(Class<?> component, Deque<Class<?>> deque) {
+        List<Class<?>> dependencies = providers.get(component).getDependencies();
+        dependencies.forEach(dependency -> {
+            if (deque.contains(dependency))
+                throw new CyclicDependencyFoundException(dependency, new ArrayList<>(deque));
+            deque.push(dependency);
+
+            checkCyclicDependency(dependency, deque);
+
+            deque.pop();
+        });
     }
 
 
@@ -52,11 +63,6 @@ public class ContextConfig {
             }
 
             @Override
-            public void check() {
-                // no implementation needs here
-            }
-
-            @Override
             public List<Class<?>> getDependencies() {
                 return Collections.emptyList();
             }
@@ -64,19 +70,15 @@ public class ContextConfig {
     }
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
-        providers.put(typeClass, new DefaultComponentProvider<>(implementationClass, typeClass));
+        providers.put(typeClass, new DefaultComponentProvider<>(implementationClass));
     }
 
     class DefaultComponentProvider<T> implements ComponentProvider<T> {
 
         private final Constructor<T> constructor;
-        private final Class<?> typeClass;
 
-        private boolean checking = false;
-
-        DefaultComponentProvider(Class<T> implementationClass, Class<?> typeClass) {
+        DefaultComponentProvider(Class<T> implementationClass) {
             this.constructor = (Constructor<T>) getInjectionConstructor(implementationClass);
-            this.typeClass = typeClass;
         }
 
         private Constructor<?> getInjectionConstructor(Class<?> implementationClass) {
@@ -107,23 +109,6 @@ public class ContextConfig {
                 return constructor.newInstance(constructorParameters);
             } catch (ReflectiveOperationException e) {
                 throw new UnsupportedOperationException(e);
-            }
-        }
-
-        @Override
-        public void check() {
-            if (checking) throw new CyclicDependencyFoundException(typeClass);
-            try {
-                checking = true;
-                stream(constructor.getParameterTypes()).forEach(parameterType -> Optional.ofNullable(providers.get(parameterType))
-                        .orElseThrow(() -> new DependencyNotFoundException(parameterType, Collections.emptyList()))
-                        .check());
-            } catch (CyclicDependencyFoundException e) {
-                throw new CyclicDependencyFoundException(typeClass, e.getDependencies());
-            } catch (DependencyNotFoundException e) {
-                throw new DependencyNotFoundException(typeClass, e.getDependencies());
-            } finally {
-                checking = false;
             }
         }
 
