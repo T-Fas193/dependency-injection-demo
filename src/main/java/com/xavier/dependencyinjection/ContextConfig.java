@@ -65,8 +65,6 @@ public class ContextConfig {
         private final Constructor<T> constructor;
         private final Class<?> typeClass;
 
-        private boolean constructing = false;
-
         private boolean checking = false;
 
         DefaultComponentProvider(Constructor<T> constructor, Class<?> typeClass) {
@@ -76,21 +74,13 @@ public class ContextConfig {
 
         @Override
         public T get() {
-            if (constructing) throw new CyclicDependencyFoundException(typeClass);
             try {
-                constructing = true;
                 Object[] constructorParameters = stream(constructor.getParameterTypes())
                         .map(parameterType -> getContext().get(parameterType).orElseThrow(() -> new DependencyNotFoundException(parameterType, Collections.emptyList())))
                         .toArray();
                 return constructor.newInstance(constructorParameters);
-            } catch (CyclicDependencyFoundException e) {
-                throw new CyclicDependencyFoundException(typeClass, e.getDependencies());
-            } catch (DependencyNotFoundException e) {
-                throw new DependencyNotFoundException(typeClass, e.getDependencies());
             } catch (ReflectiveOperationException e) {
                 throw new UnsupportedOperationException(e);
-            } finally {
-                constructing = false;
             }
         }
 
