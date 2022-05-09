@@ -56,8 +56,7 @@ public class ContextConfig {
     }
 
     public <T, I extends T> void bind(Class<T> typeClass, Class<I> implementationClass) {
-        Constructor<?> constructor = getInjectionConstructor(implementationClass);
-        providers.put(typeClass, new DefaultComponentProvider<>(constructor, typeClass));
+        providers.put(typeClass, new DefaultComponentProvider<>(implementationClass, typeClass));
     }
 
     class DefaultComponentProvider<T> implements ComponentProvider<T> {
@@ -67,9 +66,28 @@ public class ContextConfig {
 
         private boolean checking = false;
 
-        DefaultComponentProvider(Constructor<T> constructor, Class<?> typeClass) {
-            this.constructor = constructor;
+        DefaultComponentProvider(Class<T> implementationClass, Class<?> typeClass) {
+            this.constructor = (Constructor<T>) getInjectionConstructor(implementationClass);
             this.typeClass = typeClass;
+        }
+
+        private Constructor<?> getInjectionConstructor(Class<?> implementationClass) {
+            int modifiers = implementationClass.getModifiers();
+            if (Modifier.isAbstract(modifiers) || Modifier.isInterface(modifiers))
+                throw new UnsupportedOperationException();
+
+            Constructor<?>[] injectionConstructors = stream(implementationClass.getConstructors())
+                    .filter(implementationConstructor -> implementationConstructor.isAnnotationPresent(Inject.class))
+                    .toArray(Constructor<?>[]::new);
+            if (injectionConstructors.length > 1) throw new MultipleInjectionFoundException();
+
+            return stream(injectionConstructors).findFirst().orElseGet(() -> {
+                try {
+                    return implementationClass.getConstructor();
+                } catch (NoSuchMethodException e) {
+                    throw new UnsupportedOperationException(e);
+                }
+            });
         }
 
         @Override
@@ -100,28 +118,6 @@ public class ContextConfig {
                 checking = false;
             }
         }
-    }
-
-    private Constructor<?> getInjectionConstructor(Class<?> implementationClass) {
-        if (classCannotInstance(implementationClass)) throw new UnsupportedOperationException();
-
-        Constructor<?>[] injectionConstructors = stream(implementationClass.getConstructors())
-                .filter(constructor -> constructor.isAnnotationPresent(Inject.class))
-                .toArray(Constructor<?>[]::new);
-        if (injectionConstructors.length > 1) throw new MultipleInjectionFoundException();
-
-        return stream(injectionConstructors).findFirst().orElseGet(() -> {
-            try {
-                return implementationClass.getConstructor();
-            } catch (NoSuchMethodException e) {
-                throw new UnsupportedOperationException(e);
-            }
-        });
-    }
-
-    private boolean classCannotInstance(Class<?> implementationClass) {
-        int modifiers = implementationClass.getModifiers();
-        return Modifier.isAbstract(modifiers) || Modifier.isInterface(modifiers);
     }
 
 }
