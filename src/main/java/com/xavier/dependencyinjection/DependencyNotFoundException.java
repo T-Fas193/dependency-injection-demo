@@ -10,11 +10,6 @@ public class DependencyNotFoundException extends RuntimeException {
 
     private final List<Class<?>> dependencies = new ArrayList<>();
 
-    public DependencyNotFoundException(Class<?> componentType, Class<?> implementationType) {
-        dependencies.add(componentType);
-        dependencies.add(implementationType);
-    }
-
     public DependencyNotFoundException(Class<?> componentType, List<Class<?>> existDependencies) {
         dependencies.add(componentType);
         dependencies.addAll(existDependencies);

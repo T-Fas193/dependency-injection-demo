@@ -4,10 +4,7 @@ import jakarta.inject.Inject;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static java.util.Arrays.stream;
 
@@ -25,11 +22,17 @@ public class ContextConfig {
 
         void check();
 
+        List<Class<?>> getDependencies();
+
     }
 
     private final Map<Class<?>, ComponentProvider<?>> providers = new HashMap<>();
 
     public Context getContext() {
+        providers.forEach((key, value) -> value.getDependencies().forEach(dependency -> {
+            if (!providers.containsKey(dependency))
+                throw new DependencyNotFoundException(key, Collections.singletonList(dependency));
+        }));
         providers.forEach((key, value) -> value.check());
 
         return new Context() {
@@ -51,6 +54,11 @@ public class ContextConfig {
             @Override
             public void check() {
                 // no implementation needs here
+            }
+
+            @Override
+            public List<Class<?>> getDependencies() {
+                return Collections.emptyList();
             }
         });
     }
@@ -117,6 +125,11 @@ public class ContextConfig {
             } finally {
                 checking = false;
             }
+        }
+
+        @Override
+        public List<Class<?>> getDependencies() {
+            return Arrays.asList(constructor.getParameterTypes());
         }
     }
 
