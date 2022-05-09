@@ -165,10 +165,67 @@ public class DependencyInjectionTest {
     }
 
     // 字段注入
-    // 通过 Inject 标注将字段声明为依赖组件
-    // 如果组件需要的依赖不存在，则抛出异常
-    // 如果字段为 final 则抛出异常
-    // 如果组件间存在循环依赖，则抛出异常
+    @Nested
+    class FieldComponentBind {
+
+        @BeforeEach
+        void setup() {
+            contextConfig = new ContextConfig();
+        }
+
+        // 通过 Inject 标注将字段声明为依赖组件
+        @Test
+        void should_bind_if_field_annotated_with_inject() {
+            Dependency dependency = new Dependency() {
+            };
+            contextConfig.bind(Dependency.class, dependency);
+            contextConfig.bind(Component.class, ComponentDependOnDependencyFieldInjection.class);
+
+            Optional<Component> component = contextConfig.getContext().get(Component.class);
+            assertTrue(component.isPresent());
+            assertEquals(dependency, ((ComponentDependOnDependencyFieldInjection) component.get()).getDependency());
+        }
+
+        // 如果组件需要的依赖不存在，则抛出异常
+        @Test
+        void should_throw_exception_if_field_dependency_not_found() {
+            contextConfig.bind(Component.class, ComponentDependOnDependencyFieldInjection.class);
+
+            assertThrows(DependencyNotFoundException.class, () -> contextConfig.getContext());
+        }
+
+        @Test
+        void should_throw_exception_if_transitive_field_dependency_not_found() {
+            contextConfig.bind(Component.class, ComponentDependOnDependencyFieldInjection.class);
+            contextConfig.bind(Dependency.class, DependencyDependOnAnotherDependencyFieldInjection.class);
+
+            assertThrows(DependencyNotFoundException.class, contextConfig::getContext);
+        }
+
+        // 如果字段为 final 则抛出异常
+        @Test
+        void should_throw_exception_if_field_is_declared_with_final() {
+            assertThrows(FinalDependencyFoundException.class, () -> contextConfig.bind(Component.class, ComponentDependOnFinalDependencyFieldInjection.class));
+        }
+
+        // 如果组件间存在循环依赖，则抛出异常
+        @Test
+        void should_throw_exception_if_cyclic_field_dependency_injection_found() {
+            contextConfig.bind(Component.class, ComponentDependOnDependencyFieldInjection.class);
+            contextConfig.bind(Dependency.class, DependencyDependOnComponentFieldInjection.class);
+
+            assertThrows(CyclicDependencyFoundException.class, () -> contextConfig.getContext());
+        }
+
+        @Test
+        void should_throw_exception_if_transitive_cyclic_field_dependency_injection_found() {
+            contextConfig.bind(Component.class, ComponentDependOnDependencyFieldInjection.class);
+            contextConfig.bind(Dependency.class, DependencyDependOnAnotherDependencyFieldInjection.class);
+            contextConfig.bind(AnotherDependency.class, AnotherDependencyDependOnComponentFieldInjection.class);
+
+            assertThrows(CyclicDependencyFoundException.class, contextConfig::getContext);
+        }
+    }
 
     // 方法注入
     // 通过 Inject 标注的方法，其参数为依赖组件
