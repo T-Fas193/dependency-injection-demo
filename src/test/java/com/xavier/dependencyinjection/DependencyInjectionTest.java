@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.List;
 import java.util.Optional;
@@ -240,12 +241,33 @@ public class DependencyInjectionTest {
     }
 
     // 方法注入
-    // 通过 Inject 标注的方法，其参数为依赖组件
-    // 通过 Inject 标注的无参数方法，会被调用
-    // 按照子类中的规则，覆盖父类中的 Inject 方法
-    // 如果组件需要的依赖不存在，则抛出异常
-    // 如果方法定义类型参数，则抛出异常
-    //  如果组件间存在循环依赖，则抛出异常
+    @Nested
+    class MethodComponentBind {
+
+        @BeforeEach
+        void setup() {
+            contextConfig = new ContextConfig();
+        }
+
+        // 通过 Inject 标注的方法，其参数为依赖组件
+        @Test
+        void should_bind_if_method_annotated_with_injection() {
+            Dependency dependency = Mockito.mock(Dependency.class);
+
+            contextConfig.bind(Dependency.class, dependency);
+            contextConfig.bind(Component.class, ComponentDependOnDependencyMethodInjection.class);
+
+            Optional<Component> component = contextConfig.getContext().get(Component.class);
+            assertTrue(component.isPresent());
+            assertEquals(dependency, ((ComponentDependOnDependencyMethodInjection) component.get()).getDependency());
+        }
+
+        // 通过 Inject 标注的无参数方法，会被调用
+        // 按照子类中的规则，覆盖父类中的 Inject 方法
+        // 如果组件需要的依赖不存在，则抛出异常
+        // 如果方法定义类型参数，则抛出异常
+        //  如果组件间存在循环依赖，则抛出异常
+    }
 
     // 对于依赖选择部分，我分解的任务列表如下：
 

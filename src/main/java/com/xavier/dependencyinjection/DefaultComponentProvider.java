@@ -2,9 +2,7 @@ package com.xavier.dependencyinjection;
 
 import jakarta.inject.Inject;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -17,10 +15,16 @@ class DefaultComponentProvider<T> implements ComponentProvider<T> {
 
     private final Constructor<T> constructor;
     private final List<Field> fields;
+    private final List<Method> methdos;
 
     DefaultComponentProvider(Class<T> implementationClass) {
         this.constructor = (Constructor<T>) getInjectionConstructor(implementationClass);
         fields = getInjectionFields(implementationClass);
+        methdos = getInjectionMethods(implementationClass);
+    }
+
+    private List<Method> getInjectionMethods(Class<T> implementationClass) {
+        return stream(implementationClass.getMethods()).filter(method -> method.isAnnotationPresent(Inject.class)).toList();
     }
 
     private List<Field> getInjectionFields(final Class<T> implementationClass) {
@@ -72,6 +76,14 @@ class DefaultComponentProvider<T> implements ComponentProvider<T> {
                     field.setAccessible(true);
                     field.set(instance, injectionComponent);
                 } catch (IllegalAccessException e) {
+                    throw new UnsupportedOperationException(e);
+                }
+            });
+            methdos.forEach(method -> {
+                Object[] parameters = stream(method.getParameterTypes()).map(type -> context.get(type).orElse(null)).toArray();
+                try {
+                    method.invoke(instance, parameters);
+                } catch (IllegalAccessException | InvocationTargetException e) {
                     throw new UnsupportedOperationException(e);
                 }
             });
