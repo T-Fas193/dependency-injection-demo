@@ -23,13 +23,19 @@ class DefaultComponentProvider<T> implements ComponentProvider<T> {
         fields = getInjectionFields(implementationClass);
     }
 
-    private List<Field> getInjectionFields(Class<T> implementationClass) {
-        Field[] declaredFields = implementationClass.getDeclaredFields();
-        List<Field> injectionFields = stream(declaredFields).filter(field -> field.isAnnotationPresent(Inject.class)).toList();
-        injectionFields.forEach(field -> {
-            if (Modifier.isFinal(field.getModifiers()))
-                throw new FinalDependencyFoundException();
-        });
+    private List<Field> getInjectionFields(final Class<T> implementationClass) {
+        List<Field> injectionFields = new ArrayList<>();
+        Class<?> currentClass = implementationClass;
+        while (currentClass != Object.class) {
+            Field[] declaredFields = currentClass.getDeclaredFields();
+            injectionFields.addAll(stream(declaredFields).filter(field -> field.isAnnotationPresent(Inject.class)).toList());
+            injectionFields.forEach(field -> {
+                if (Modifier.isFinal(field.getModifiers()))
+                    throw new FinalDependencyFoundException();
+            });
+            currentClass = currentClass.getSuperclass();
+        }
+
         return injectionFields;
     }
 

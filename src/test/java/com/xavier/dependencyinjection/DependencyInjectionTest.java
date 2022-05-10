@@ -186,6 +186,18 @@ public class DependencyInjectionTest {
             assertEquals(dependency, ((ComponentDependOnDependencyFieldInjection) component.get()).getDependency());
         }
 
+        @Test
+        void should_bind_if_super_class_field_annotated_with_inject() {
+            Dependency dependency = new Dependency() {
+            };
+            contextConfig.bind(Dependency.class, dependency);
+            contextConfig.bind(Component.class, SubcomponentFieldInjection.class);
+
+            Optional<Component> component = contextConfig.getContext().get(Component.class);
+            assertTrue(component.isPresent());
+            assertEquals(dependency, ((SubcomponentFieldInjection) component.get()).getDependency());
+        }
+
         // 如果组件需要的依赖不存在，则抛出异常
         @Test
         void should_throw_exception_if_field_dependency_not_found() {
