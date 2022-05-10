@@ -275,6 +275,15 @@ public class DependencyInjectionTest {
         }
 
         // 通过 Inject 标注的无参数方法，会被调用
+        @Test
+        void should_call_method_if_no_parameters_method_annotated_with_injection() {
+            contextConfig.bind(Component.class, NoParameterComponentMethodInjection.class);
+
+            Optional<Component> component = contextConfig.getContext().get(Component.class);
+            assertTrue(component.isPresent());
+            assertEquals("this is a test string", ((NoParameterComponentMethodInjection) component.get()).getTestString());
+        }
+
         // 按照子类中的规则，覆盖父类中的 Inject 方法
         // 如果组件需要的依赖不存在，则抛出异常
         // 如果方法定义类型参数，则抛出异常
