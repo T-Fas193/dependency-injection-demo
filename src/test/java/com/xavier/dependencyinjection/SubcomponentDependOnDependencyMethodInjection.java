@@ -1,0 +1,4 @@
+package com.xavier.dependencyinjection;
+
+public class SubcomponentDependOnDependencyMethodInjection extends ComponentDependOnDependencyMethodInjection {
+}

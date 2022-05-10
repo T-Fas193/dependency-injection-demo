@@ -262,6 +262,18 @@ public class DependencyInjectionTest {
             assertEquals(dependency, ((ComponentDependOnDependencyMethodInjection) component.get()).getDependency());
         }
 
+        @Test
+        void should_bind_if_super_class_method_is_annotated_with_injection() {
+            Dependency dependency = Mockito.mock(Dependency.class);
+
+            contextConfig.bind(Dependency.class, dependency);
+            contextConfig.bind(Component.class, SubcomponentDependOnDependencyMethodInjection.class);
+
+            Optional<Component> component = contextConfig.getContext().get(Component.class);
+            assertTrue(component.isPresent());
+            assertEquals(dependency, ((SubcomponentDependOnDependencyMethodInjection) component.get()).getDependency());
+        }
+
         // 通过 Inject 标注的无参数方法，会被调用
         // 按照子类中的规则，覆盖父类中的 Inject 方法
         // 如果组件需要的依赖不存在，则抛出异常
