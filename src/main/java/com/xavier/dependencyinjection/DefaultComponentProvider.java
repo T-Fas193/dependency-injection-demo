@@ -104,6 +104,7 @@ class DefaultComponentProvider<T> implements ComponentProvider<T> {
     public List<Class<?>> getDependencies() {
         List<Class<?>> dependencies = new ArrayList<>(Arrays.asList(constructor.getParameterTypes()));
         dependencies.addAll(fields.stream().map(Field::getType).toList());
+        methods.stream().map(Method::getParameterTypes).map(Arrays::asList).forEach(dependencies::addAll);
         return dependencies;
     }
 

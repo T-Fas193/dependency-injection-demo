@@ -298,6 +298,12 @@ public class DependencyInjectionTest {
         }
 
         // 如果组件需要的依赖不存在，则抛出异常
+        @Test
+        void should_throw_exception_if_dependency_not_found() {
+            contextConfig.bind(Component.class, ComponentDependOnDependencyMethodInjection.class);
+
+            assertThrows(DependencyNotFoundException.class, contextConfig::getContext);
+        }
         // 如果方法定义类型参数，则抛出异常
         //  如果组件间存在循环依赖，则抛出异常
     }
