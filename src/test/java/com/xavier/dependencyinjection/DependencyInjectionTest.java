@@ -285,6 +285,18 @@ public class DependencyInjectionTest {
         }
 
         // 按照子类中的规则，覆盖父类中的 Inject 方法
+        @Test
+        void should_use_override_method_if_super_method_annotated_with_injection() {
+            Dependency dependency = Mockito.mock(Dependency.class);
+            contextConfig.bind(Dependency.class, dependency);
+            contextConfig.bind(Component.class, OverrideComponentDependOnDependencyMethodInjection.class);
+
+            Optional<Component> component = contextConfig.getContext().get(Component.class);
+            assertTrue(component.isPresent());
+            assertEquals(dependency, ((OverrideComponentDependOnDependencyMethodInjection) component.get()).getDependency());
+            assertEquals("this is a override test string", ((OverrideComponentDependOnDependencyMethodInjection) component.get()).getTestString());
+        }
+
         // 如果组件需要的依赖不存在，则抛出异常
         // 如果方法定义类型参数，则抛出异常
         //  如果组件间存在循环依赖，则抛出异常
